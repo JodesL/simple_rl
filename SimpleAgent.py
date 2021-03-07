@@ -95,7 +95,7 @@ class PGAgent:
 
         return
 
-    def update_ac_true_q(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0):
+    def update_ac_true_q(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0, *args, **kwargs):
         # this is the actor-critic update with the true q-values
         # trajectory is a sequence of transitions for one episode
         # of the form ((s, a, r'), (s', a', r''), ...)
@@ -296,6 +296,20 @@ class PGAgent:
             return state[0], state[1]
         else:
             raise AssertionError("invalid env {}".format(self.env.name))
+
+
+class ExAgent(PGAgent):
+    def __init__(self, num_actions, discount, baseline_type=None, seed=None, env=None, use_natural_pg=False, relative_perturb=False):
+        super().__init__(num_actions, discount, baseline_type, seed, env, use_natural_pg, relative_perturb)
+
+    def online_update(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0, *args, **kwargs):
+        self.update_ac_true_q([trajectory[-1]], step_size, perturb, rew_step_size, num_steps_from_start, *args, **kwargs)
+
+    def update(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0, *args, **kwargs):
+        self.update_ac_true_q(trajectory, step_size, perturb, rew_step_size, num_steps_from_start=0, *args, **kwargs)
+
+
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
