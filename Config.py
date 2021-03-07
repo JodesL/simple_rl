@@ -25,15 +25,15 @@ class Config:
         # RS, IS; constant0 policy; local detect features
 
         self.algorithms = ['ac_true_q']
-        self.algs_sweep_params = {'ac_true_q': OD([("step_size", [0.05, 0.1, 0.3, 0.5, 1.0, 3.0]),
-                                                   # ("rew_step_size", [0.0]),
-                                                   ("perturb", [-1.0, -0.5, -0.3, -0.1, -0.05, -0.03, 0, 0.03, 0.05, 0.1, 0.3, 0.5, 1.0])])
-                                   }
+        self.algs_sweep_params = {'ac_true_q': {"step_size": [0.05, 0.1, 0.3, 0.5, 1.0, 3.0],
+                                                "perturb": [-1.0, -0.5, -0.3, -0.1, -0.05, -0.03, 0, 0.03, 0.05, 0.1, 0.3, 0.5, 1.0]
+                                                }
+                                  }
 
 
-        self.shared_sweep_params = OD([('optimizer', ['SGD']),
-                                       ('discount', [0.99]),
-                                       ('horizon', [200])])
+        self.shared_sweep_params = {'optimizer': ['SGD'],
+                                    'discount': [0.99],
+                                    'horizon': [200]}
 
         self.alg_other_params = {'seed': 123, 'baseline_type': 'minvar', 'use_natural_pg': False, 'relative_perturb': False}
         # TODO when adding ADAM, think about where to put beta1 and beta2

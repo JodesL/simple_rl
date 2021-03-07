@@ -3,9 +3,12 @@
 #
 #
 ###
+import time
+import numpy as np
+
 import SimpleMDP
 from utils import *
-import time
+
 
 
 class PGAgent:
