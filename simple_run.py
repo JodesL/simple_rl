@@ -13,6 +13,7 @@ import SimpleAgent
 import argparse
 import SimpleMDP
 from Config import config
+from cartesian_product import cartesian_product
 
 # def parse_args():
 #     parser = argparse.ArgumentParser(description = 'Experiment')
@@ -44,13 +45,10 @@ num_shared_hyperparam_settings = int(np.prod([len(v) for v in config.shared_swee
 num_alg_hyperparam_settings =  int(np.prod([len(v) for v in config.algs_sweep_params[alg].values()]))
 num_hyperparam_settings = num_shared_hyperparam_settings * num_alg_hyperparam_settings
 
-
-sweep_params_dict = collections.OrderedDict(
-    list(config.shared_sweep_params.items()) + list(config.algs_sweep_params[alg].items()))
-
-hyperparam_names = list(sweep_params_dict.keys())
-hyperparam_tuple = list(itertools.product(*list(sweep_params_dict.values())))[hyp_index]
-hyperparams = dict(zip(hyperparam_names, hyperparam_tuple))  # the hyperparameter setting for the current run
+sweep_params_dict = config.algs_sweep_params[alg]
+sweep_params_dict.update(config.shared_sweep_params)
+hyperparam_sweep_list = cartesian_product(sweep_params_dict)
+hyperparams = hyperparam_sweep_list[hyp_index]  # the hyperparameter setting for the current run
 
 # training
 start_time = time.perf_counter()
