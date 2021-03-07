@@ -41,10 +41,6 @@ from cartesian_product import cartesian_product
 alg = config.algorithms[0]
 hyp_index = 1
 
-num_shared_hyperparam_settings = int(np.prod([len(v) for v in config.shared_sweep_params.values()]))
-num_alg_hyperparam_settings =  int(np.prod([len(v) for v in config.algs_sweep_params[alg].values()]))
-num_hyperparam_settings = num_shared_hyperparam_settings * num_alg_hyperparam_settings
-
 sweep_params_dict = config.algs_sweep_params[alg]
 sweep_params_dict.update(config.shared_sweep_params)
 hyperparam_sweep_list = cartesian_product(sweep_params_dict)
