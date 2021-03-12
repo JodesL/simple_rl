@@ -41,6 +41,7 @@ from cartesian_product import cartesian_product
 alg = config.algorithms[0]
 hyp_index = 1
 
+
 sweep_params_dict = config.algs_sweep_params[alg]
 sweep_params_dict.update(config.shared_sweep_params)
 hyperparam_sweep_list = cartesian_product(sweep_params_dict)

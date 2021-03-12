@@ -24,6 +24,7 @@ class PGAgent:
             self.avg_returns = np.zeros(shape=[env.depth, env.depth])
             self.visit_counts = np.zeros(shape=[env.depth, env.depth])  # used to count visits to each state
 
+        self.seed = seed
         self.num_actions = num_actions
         self.baseline_type = baseline_type  # "avg", "minvar", None
         self.use_natural_pg = use_natural_pg
@@ -296,19 +297,6 @@ class PGAgent:
             return state[0], state[1]
         else:
             raise AssertionError("invalid env {}".format(self.env.name))
-
-
-class ExAgent(PGAgent):
-    def __init__(self, num_actions, discount, baseline_type=None, seed=None, env=None, use_natural_pg=False, relative_perturb=False):
-        super().__init__(num_actions, discount, baseline_type, seed, env, use_natural_pg, relative_perturb)
-
-    def online_update(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0, *args, **kwargs):
-        self.update_ac_true_q([trajectory[-1]], step_size, perturb, rew_step_size, num_steps_from_start, *args, **kwargs)
-
-    def update(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0, *args, **kwargs):
-        self.update_ac_true_q(trajectory, step_size, perturb, rew_step_size, num_steps_from_start=0, *args, **kwargs)
-
-
 
 
 if __name__ == '__main__':
