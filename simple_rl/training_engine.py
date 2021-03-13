@@ -5,9 +5,6 @@ from collections import defaultdict
 
 
 class BaseRLAgent(abc.ABC):
-    def __init__(self):
-        pass
-
     @abc.abstractmethod
     def get_action(self, state):
         pass
@@ -24,12 +21,17 @@ class BaseRLAgent(abc.ABC):
 
 
 class TrainingEngine:
-    def __init__(self, env, agent, discount_rate, num_runs, num_episodes_per_run, save_frequency=5, max_steps=None):
-        self.env = env
-        self.agent = agent
+    def __init__(self, env_class, env_parameters,
+                 agent_class, agent_parameters,
+                 discount_rate, num_runs, num_episodes_per_run, pass_env_to_agent=False, save_frequency=5, max_steps=None):
+        self.env_class = env_class
+        self.env_parameters = env_parameters
+        self.agent_class = agent_class
+        self.agent_parameters = agent_parameters
         self.discount_rate = discount_rate
         self.num_runs = num_runs
         self.num_episodes_per_run = num_episodes_per_run
+        self.pass_env_to_agent = pass_env_to_agent
         self.save_frequency = save_frequency
         self.max_steps = max_steps
 
@@ -41,8 +43,7 @@ class TrainingEngine:
             logged_episode_values = defaultdict(list)
 
             # training loop
-            env = deepcopy(self.env)
-            agent = deepcopy(self.agent)
+            env, agent = self._init_env_agent()
             state = env.reset()
             for i_ep in range(self.num_episodes_per_run):
                 done = False
@@ -95,3 +96,13 @@ class TrainingEngine:
                 logged_run_values[key].append(value)
 
         return logged_run_values
+
+    def _init_env_agent(self):
+        env = self.env_class(**self.env_parameters)
+
+        if self.pass_env_to_agent:
+            self.agent_parameters.update({'env': env})
+
+        agent = self.agent_class(**self.agent_parameters)
+
+        return env, agent
