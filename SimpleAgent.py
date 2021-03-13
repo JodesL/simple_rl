@@ -24,6 +24,7 @@ class PGAgent:
             self.avg_returns = np.zeros(shape=[env.depth, env.depth])
             self.visit_counts = np.zeros(shape=[env.depth, env.depth])  # used to count visits to each state
 
+        self.seed = seed
         self.num_actions = num_actions
         self.baseline_type = baseline_type  # "avg", "minvar", None
         self.use_natural_pg = use_natural_pg
@@ -95,7 +96,7 @@ class PGAgent:
 
         return
 
-    def update_ac_true_q(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0):
+    def update_ac_true_q(self, trajectory, step_size, perturb, rew_step_size=None, num_steps_from_start=0, *args, **kwargs):
         # this is the actor-critic update with the true q-values
         # trajectory is a sequence of transitions for one episode
         # of the form ((s, a, r'), (s', a', r''), ...)
@@ -296,6 +297,7 @@ class PGAgent:
             return state[0], state[1]
         else:
             raise AssertionError("invalid env {}".format(self.env.name))
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
