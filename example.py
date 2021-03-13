@@ -22,6 +22,10 @@ train_engine = TrainingEngine(env_class=FourRoomsEnv,
                               pass_env_to_agent=True,
                               discount_rate=0.99,
                               num_runs=1,
-                              num_episodes_per_run=100,
-                              save_frequency=5)
+                              num_iterations_per_run=300,
+                              iteration_counter='steps',
+                              save_frequency=50,
+                              save_iterator='steps')
 out = train_engine.run()
+print(out)
+

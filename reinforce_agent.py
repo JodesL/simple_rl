@@ -74,7 +74,7 @@ class ReinforceAgent(BaseRLAgent):
 
         return
 
-    def online_update(self, trajectory, num_steps, *args, **kwargs):
+    def online_update(self, trajectory, *args, **kwargs):
         state = trajectory[-1][0]
         self.state_visitation[state[0], state[1]] += 1
         self.total_entropy += softmax_entropy(self.param[tuple(state)])
