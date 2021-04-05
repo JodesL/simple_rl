@@ -22,7 +22,7 @@ class BaseRLAgent(abc.ABC):
 
 class BaseMetricLogger(abc.ABC):
     def __init__(self):
-        self.iterative_metrics = defaultdict(list)
+        self.metrics = defaultdict(list)
 
     def save_iterative_metrics(
         self,
@@ -33,16 +33,29 @@ class BaseMetricLogger(abc.ABC):
         agent,
         env,
         *args,
-        **kwargs,
+        **kwargs
     ):
-        self.iterative_metrics["returns"].append(total_reward)
-        self.iterative_metrics["discounted_returns"].append(total_discounted_reward)
+        self.metrics["returns"].append(total_reward)
+        self.metrics["discounted_returns"].append(total_discounted_reward)
+
+    # def save_external_run_metrics(
+    #     self,
+    #     num_steps,
+    #     trajectory,
+    #     total_reward,
+    #     total_discounted_reward,
+    #     agent,
+    #     env,
+    #     *args,
+    #     **kwargs
+    # ):
+    #     pass
 
     def reset(self):
-        self.iterative_metrics = defaultdict(list)
+        self.metrics = defaultdict(list)
 
     def get_metrics(self):
-        return {"iterative_metrics": self.iterative_metrics}
+        return {"metrics": self.metrics}
 
 
 class TrainingEngine:
@@ -75,17 +88,18 @@ class TrainingEngine:
         self.num_runs = num_runs
         self.num_iterations_per_run = num_iterations_per_run
         self.iteration_counter = iteration_counter  # episodes or steps
+        self.evaluation_num_iterations = evaluation_num_iterations
         self.pass_env_to_agent = pass_env_to_agent
         self.save_frequency = save_frequency
         self.max_steps = max_steps
 
-        self.run_metrics = defaultdict(list)
+        self.run_metrics = []
 
         self._sanity_check()
 
     def run(self):
         start_time = time.perf_counter()
-        self.run_metrics = defaultdict(list)
+        self.run_metrics = []
 
         for _ in range(self.num_runs):
             self.metric_logger.reset()  # reset for run
@@ -117,57 +131,42 @@ class TrainingEngine:
 
                     agent.online_update(trajectory=trajectory, num_steps=num_steps)
 
-                    if self.iteration_counter == "steps" and (
-                        total_num_steps[0] == 0
-                        or (total_num_steps[0] + 1) % self.save_frequency == 0
-                    ):
+                    if self.iteration_counter == "steps" and (total_num_steps[0] == 0 or (total_num_steps[0] + 1) % self.save_frequency == 0):
                         self.metric_logger.save_iterative_metrics(
                             num_steps=num_steps,
                             trajectory=trajectory,
                             total_reward=total_reward,
                             total_discounted_reward=total_discounted_reward,
                             agent=agent,
-                            env=env,
+                            env=env
                         )
 
                     num_steps += 1
                     total_num_steps[0] += 1
-                    if (self.max_steps and num_steps >= self.max_steps) or (
-                        counter[0] >= break_value
-                    ):
+                    if (self.max_steps and num_steps >= self.max_steps) or (counter[0] >= break_value):
                         break
 
                 agent.update(trajectory=trajectory, num_steps=num_steps)
-                print(
-                    "ep",
-                    i_ep[0],
-                    "time",
-                    (time.perf_counter() - start_time) / 60,
-                    flush=True,
-                )
+                print("ep", i_ep[0], "time", (time.perf_counter() - start_time) / 60)
 
-                if self.iteration_counter == "episodes" and (
-                    i_ep[0] == 0 or (i_ep[0] + 1) % self.save_frequency == 0
-                ):
+                if self.iteration_counter == "episodes" and (i_ep[0] == 0 or (i_ep[0] + 1) % self.save_frequency == 0):
                     self.metric_logger.save_iterative_metrics(
                         num_steps=num_steps,
                         trajectory=trajectory,
                         total_reward=total_reward,
                         total_discounted_reward=total_discounted_reward,
                         agent=agent,
-                        env=env,
+                        env=env
                     )
-                    # TODO understand the correct interface
-                    # run evaluation phase
-                    # eval_logged = eval_agent(deepcopy(agent), env, n_test=100, max_steps=100)
-                    # eval_state_visitation_entropy = eval_logged["state_visitation_entropy"]
-                    # logged_run_values["state_visitation_entropy_eval"].append(eval_state_visitation_entropy)
+
+                    if self.evaluation_num_iterations and hasattr(self.metric_logger, 'save_external_run_metrics') and \
+                            callable(self.metric_logger.save_external_run_metrics):
+                        self._external_evaluation(agent=agent, evaluation_num_iterations=self.evaluation_num_iterations)
 
                 i_ep[0] += 1
 
-            iterative_metrics = self.metric_logger.get_metrics()
-            for key, value in iterative_metrics.items():
-                self.run_metrics[key].append(value)
+            metrics = self.metric_logger.get_metrics()
+            self.run_metrics.append(metrics)
 
         return self.run_metrics
 
@@ -185,16 +184,42 @@ class TrainingEngine:
         if self.pass_env_to_agent:
             agent_sig = signature(self.agent_class)
             if not agent_sig.parameters.get(self.AGENT_ENV_ARG):
-                raise ValueError(
-                    f"When pass_env_agent is set to True, \
-                                 agent_class needs to have a named argument {self.AGENT_ENV_ARG}"
-                )
+                raise ValueError(f"When pass_env_agent is set to True, \
+                    agent_class needs to have a named argument {self.AGENT_ENV_ARG}")
 
         if self.iteration_counter not in ["episodes", "steps"]:
-            raise ValueError(
-                f'iteration_counter must be either "episodes" or "steps", \
-                             received {self.iteration_counter} instead'
-            )
+            raise ValueError(f'iteration_counter must be either "episodes" or "steps", \
+                received {self.iteration_counter} instead')
 
-    def _external_evaluation(self):
-        pass
+    def _external_evaluation(self, agent, evaluation_num_iterations):
+
+        env, _ = self._init_env_agent()
+        for _ in range(evaluation_num_iterations):
+            state = env.reset()
+            done = False
+            trajectory = []
+            total_reward = 0
+            total_discounted_reward = 0
+            num_steps = 0
+
+            while not done:
+                prev_state = state
+
+                action = agent.get_action(state)
+                state, reward, done = env.step(action)
+
+                total_reward += reward
+                total_discounted_reward += reward * self.discount_rate ** num_steps
+
+                trajectory.append((prev_state, action, reward))
+                if self.max_steps and num_steps >= self.max_steps:
+                    break
+
+        self.metric_logger.save_external_run_metrics(
+                            num_steps=num_steps,
+                            trajectory=trajectory,
+                            total_reward=total_reward,
+                            total_discounted_reward=total_discounted_reward,
+                            agent=agent,
+                            env=env
+                        )

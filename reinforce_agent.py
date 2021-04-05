@@ -46,9 +46,7 @@ class ReinforceAgent(BaseRLAgent):
     def get_action(self, state, *args, **kwargs):
         # returns an action sampled according to the policy probabilities
         # print(self.param[state[0], state[1]])
-        return self.rng.choice(
-            np.arange(0, self.num_actions), p=self._get_policy_prob(state)
-        )
+        return self.rng.choice(np.arange(0, self.num_actions), p=self._get_policy_prob(state))
 
     def update(self, trajectory, *args, **kwargs):
         # trajectory is a sequence of transitions for one episode
@@ -77,9 +75,7 @@ class ReinforceAgent(BaseRLAgent):
                 baseline = self.avg_returns[s]
                 # update the avg returns
                 # 1 / (np.sqrt(self.visit_counts[s[0], s[1]]) + 1)  # could change the step size here
-                self.avg_returns[s] += self.rew_step_size * (
-                    total_reward - self.avg_returns[s]
-                )
+                self.avg_returns[s] += self.rew_step_size * (total_reward - self.avg_returns[s])
             elif self.baseline_type == "minvar":
                 # baseline = self.env.compute_minvar_baseline(s)
                 baseline = minvar_baseline
@@ -87,14 +83,9 @@ class ReinforceAgent(BaseRLAgent):
                 baseline = 0
             self.visit_counts[s] += 1
 
-            self.param[s] += (
-                self.step_size
-                * total_discount
-                * (
-                    (total_reward - (baseline + self.perturb))
-                    * (onehot - self._get_policy_prob(s))
-                )
-            )
+            self.param[s] += (self.step_size * total_discount * ((total_reward - (baseline + self.perturb)) * \
+                                                                 (onehot - self._get_policy_prob(s))))
+
             # note that this previous step has to be done simultaneously for all states for function approx i
             total_discount /= self.discount
 
@@ -104,18 +95,6 @@ class ReinforceAgent(BaseRLAgent):
         state = trajectory[-1][0]
         self.state_visitation[state[0], state[1]] += 1
         self.total_entropy += softmax_entropy(self.param[tuple(state)])
-
-    def additional_metrics(self, num_steps, *args, **kwargs):
-        self.state_visitation += 1e-12
-        self.state_visitation /= np.sum(self.state_visitation)
-        online_entropy = -np.sum(self.state_visitation * np.log(self.state_visitation))
-
-        add_metrics = {
-            "action_entropy_trajectory": self.total_entropy / num_steps,
-            "state_visitation_entropy_online": online_entropy,
-        }
-
-        return add_metrics
 
     def _get_policy_prob(self, state, deepcopy=False):
         # returns vector of policy probabilities
@@ -179,16 +158,15 @@ class ReinforceAgent(BaseRLAgent):
         # check = np.stack([gradlogprob_sums, disc_returns])
         # print(np.round( check[:, check[0,:].argsort()], 2))
 
-        minvar_baseline = np.sum(
-            np.array(disc_returns) * np.array(gradlogprob_sums)
-        ) / np.sum(gradlogprob_sums)
+        minvar_baseline = np.sum(np.array(disc_returns) * np.array(gradlogprob_sums)) / np.sum(gradlogprob_sums)
         # print(minvar_baseline)
         return minvar_baseline
 
 
 class ReinforceMetricLogger(BaseMetricLogger):
-    def __init__(self):
-        self.iterative_metrics = defaultdict(list)
+    def __init__(self, discount):
+        self.discout = discount
+        self.metrics = defaultdict(list)
 
     def save_iterative_metrics(
         self,
@@ -197,28 +175,35 @@ class ReinforceMetricLogger(BaseMetricLogger):
         total_reward,
         total_discounted_reward,
         agent,
-        env,
         *args,
-        **kwargs,
+        **kwargs
     ):
         agent.state_visitation += 1e-12
         agent.state_visitation /= np.sum(agent.state_visitation)
-        state_visitation_entropy_online = -np.sum(
-            agent.state_visitation * np.log(agent.state_visitation)
-        )
+        state_visitation_entropy_online = -np.sum(agent.state_visitation * np.log(agent.state_visitation))
         action_entropy_trajectory = agent.total_entropy / num_steps
 
-        self.iterative_metrics["returns"].append(total_reward)
-        self.iterative_metrics["discounted_returns"].append(total_discounted_reward)
-        self.iterative_metrics["state_visitation_entropy_online"].append(
-            state_visitation_entropy_online
-        )
-        self.iterative_metrics["action_entropy_trajectory"].append(
-            action_entropy_trajectory
-        )
+        self.metrics["returns"].append(total_reward)
+        self.metrics["discounted_returns"].append(total_discounted_reward)
+        self.metrics["state_visitation_entropy_online"].append(state_visitation_entropy_online)
+        self.metrics["action_entropy_trajectory"].append(action_entropy_trajectory)
+
+    def save_external_run_metrics(
+        self,
+        trajectory,
+        *args,
+        **kwargs
+    ):
+        ep_rewards = [x[2] for x in trajectory]
+
+        returns = (np.sum(ep_rewards))
+        ep_disc_return = np.sum([ep_rewards[i] * (self.discout**i) for i in range(len(ep_rewards))])
+
+        self.metrics['external_eval_returns'].append(returns)
+        self.metrics['external_eval_discounted_returns'].append(ep_disc_return)
 
     def reset(self):
-        self.iterative_metrics = defaultdict(list)
+        self.metrics = defaultdict(list)
 
     def get_metrics(self):
-        return {"iterative_metrics": self.iterative_metrics}
+        return {"metrics": self.metrics}
