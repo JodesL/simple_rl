@@ -38,7 +38,7 @@ class BaseMetricLogger(abc.ABC):
         self.metrics["returns"].append(total_reward)
         self.metrics["discounted_returns"].append(total_discounted_reward)
 
-    # def save_external_run_metrics(
+    # def save_evaluation_run_metrics(
     #     self,
     #     num_steps,
     #     trajectory,
