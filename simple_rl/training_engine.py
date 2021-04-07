@@ -54,8 +54,8 @@ class BaseMetricLogger(abc.ABC):
     def reset(self):
         self.metrics = defaultdict(list)
 
-    def get_metrics(self):
-        return {"metrics": self.metrics}
+    def record_run(self):
+        self.run_metrics.append(self.metrics)
 
 
 class TrainingEngine:
@@ -75,7 +75,7 @@ class TrainingEngine:
         num_iterations_per_run,
         iteration_counter="episodes",
         save_frequency=5,
-        evaluation_num_iterations=None,
+        evaluation_num_episodes=None,
         pass_env_to_agent=False,
         max_steps=None,
     ):
@@ -88,18 +88,15 @@ class TrainingEngine:
         self.num_runs = num_runs
         self.num_iterations_per_run = num_iterations_per_run
         self.iteration_counter = iteration_counter  # episodes or steps
-        self.evaluation_num_iterations = evaluation_num_iterations
+        self.evaluation_num_episodes = evaluation_num_episodes
         self.pass_env_to_agent = pass_env_to_agent
         self.save_frequency = save_frequency
         self.max_steps = max_steps
-
-        self.run_metrics = []
 
         self._sanity_check()
 
     def run(self):
         start_time = time.perf_counter()
-        self.run_metrics = []
 
         for _ in range(self.num_runs):
             self.metric_logger.reset()  # reset for run
@@ -159,16 +156,16 @@ class TrainingEngine:
                         env=env
                     )
 
-                    if self.evaluation_num_iterations and hasattr(self.metric_logger, 'save_external_run_metrics') and \
-                            callable(self.metric_logger.save_external_run_metrics):
-                        self._external_evaluation(agent=agent, evaluation_num_iterations=self.evaluation_num_iterations)
+                    if self.evaluation_num_episodes and hasattr(self.metric_logger, 'save_evaluation_run_metrics') and \
+                            callable(self.metric_logger.save_evaluation_run_metrics):
+                            #TODO raise error if method not exist or not callable
+                        self._external_evaluation(agent=agent, evaluation_num_episodes=self.evaluation_num_episodes)
 
                 i_ep[0] += 1
 
-            metrics = self.metric_logger.get_metrics()
-            self.run_metrics.append(metrics)
+            self.metric_logger.record_run()
 
-        return self.run_metrics
+        return self.metric_logger
 
     def _init_env_agent(self):
         env = self.env_class(**self.env_parameters)
@@ -191,10 +188,10 @@ class TrainingEngine:
             raise ValueError(f'iteration_counter must be either "episodes" or "steps", \
                 received {self.iteration_counter} instead')
 
-    def _external_evaluation(self, agent, evaluation_num_iterations):
+    def _external_evaluation(self, agent, evaluation_num_episodes):
 
         env, _ = self._init_env_agent()
-        for _ in range(evaluation_num_iterations):
+        for _ in range(evaluation_num_episodes):
             state = env.reset()
             done = False
             trajectory = []
@@ -215,11 +212,11 @@ class TrainingEngine:
                 if self.max_steps and num_steps >= self.max_steps:
                     break
 
-        self.metric_logger.save_external_run_metrics(
-                            num_steps=num_steps,
-                            trajectory=trajectory,
-                            total_reward=total_reward,
-                            total_discounted_reward=total_discounted_reward,
-                            agent=agent,
-                            env=env
-                        )
+            self.metric_logger.save_evaluation_run_metrics(
+                                num_steps=num_steps,
+                                trajectory=trajectory,
+                                total_reward=total_reward,
+                                total_discounted_reward=total_discounted_reward,
+                                agent=agent,
+                                env=env
+                            )

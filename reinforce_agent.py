@@ -167,6 +167,7 @@ class ReinforceMetricLogger(BaseMetricLogger):
     def __init__(self, discount):
         self.discout = discount
         self.metrics = defaultdict(list)
+        self.run_metrics = []
 
     def save_iterative_metrics(
         self,
@@ -188,7 +189,7 @@ class ReinforceMetricLogger(BaseMetricLogger):
         self.metrics["state_visitation_entropy_online"].append(state_visitation_entropy_online)
         self.metrics["action_entropy_trajectory"].append(action_entropy_trajectory)
 
-    def save_external_run_metrics(
+    def save_evaluation_run_metrics(
         self,
         trajectory,
         *args,
@@ -205,5 +206,5 @@ class ReinforceMetricLogger(BaseMetricLogger):
     def reset(self):
         self.metrics = defaultdict(list)
 
-    def get_metrics(self):
-        return {"metrics": self.metrics}
+    def record_run(self):
+        self.run_metrics.append(self.metrics)

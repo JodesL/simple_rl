@@ -25,12 +25,11 @@ train_engine = TrainingEngine(
     pass_env_to_agent=True,
     discount_rate=0.99,
     num_runs=2,
-    num_iterations_per_run=300,
-    evaluation_num_iterations=100,
+    num_iterations_per_run=100,
+    evaluation_num_episodes=6,
     iteration_counter="episodes",
     save_frequency=50
 )
 
 out = train_engine.run()
 print(out)
-
