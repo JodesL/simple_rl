@@ -208,3 +208,6 @@ class ReinforceMetricLogger(BaseMetricLogger):
 
     def record_run(self):
         self.run_metrics.append(self.metrics)
+
+    def save(self, *args, **kwargs):
+        pass
