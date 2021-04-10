@@ -122,7 +122,8 @@ def eval_agent(agent, env, n_test, max_steps=500):
 
 all_logged_values = {x : [] for x in config.logged_values}
 
-# save_path = base_save_path + "Runs/{}_{}/".format(args.alg, args.hyp_index)  # just use the index instead of the parameter values
+# save_path = base_save_path + "Runs/{}_{}/".format(
+# ,args.alg, args.hyp_index)  # just use the index instead of the parameter values
 
 # if config.parallelize_runs:
 #     save_path += 'run_{}/'.format(args.run_index)
