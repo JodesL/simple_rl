@@ -29,7 +29,6 @@ def hyperparam_sweep(
         discount_rate,
         num_runs,
         num_iterations_per_run,
-        agent_param_id=-1,
         iteration_counter="episodes",
         save_frequency=5,
         evaluation_num_episodes=None,
