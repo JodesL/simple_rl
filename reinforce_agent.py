@@ -212,11 +212,11 @@ class ReinforceMetricLogger(BaseMetricLogger):
     def record_run(self):
         self.run_metrics.append(self.metrics)
 
-    def save(self, agent_param_id, agent_parameters, *args, **kwargs):
+    def save(self, agent_param_id, agent_parameters, seed, *args, **kwargs):
         output = {'agent_param_id': agent_param_id,
                   'agent_parameters': agent_parameters,
                   'run_metrics': self.run_metrics}
-        
+
         del output['agent_parameters']['env']  # env object not json serializable 
 
         with open(os.path.join(self.save_folder, f'{agent_param_id}_run_metrics.json'), 'w') as f:

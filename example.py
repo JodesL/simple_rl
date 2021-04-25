@@ -41,13 +41,12 @@ hyperparam_sweep(
         "seed": [None],
         "rew_step_size": [None],
         "use_natural_pg": [False],
-        "relative_perturb": [False]
-    },
+        "relative_perturb": [False]},
     metric_logger=ReinforceMetricLogger(discount=0.99, save_folder='OUTPUT'),
-    pass_env_to_agent=True,
     discount_rate=0.99,
     num_runs=2,
     num_iterations_per_run=25,
     evaluation_num_episodes=6,
     iteration_counter="episodes",
-    save_frequency=5)
+    save_frequency=5,
+    seed=None)
