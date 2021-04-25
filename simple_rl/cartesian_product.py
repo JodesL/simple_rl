@@ -32,8 +32,8 @@ def hyperparam_sweep(
         iteration_counter="episodes",
         save_frequency=5,
         evaluation_num_episodes=None,
-        pass_env_to_agent=False,
-        max_steps=None):
+        max_steps=None,
+        seed=None):
 
     agent_param_sweep_list = cartesian_product(agent_parameters_sweep)
     sweep_ids = list(range(len(agent_param_sweep_list))) if sweep_ids == 'all' else sweep_ids
@@ -54,7 +54,7 @@ def hyperparam_sweep(
                                       iteration_counter=iteration_counter,
                                       save_frequency=save_frequency,
                                       evaluation_num_episodes=evaluation_num_episodes,
-                                      pass_env_to_agent=pass_env_to_agent,
-                                      max_steps=max_steps)
+                                      max_steps=max_steps,
+                                      seed=seed)
         train_engine.run()
 
