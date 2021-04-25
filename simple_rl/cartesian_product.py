@@ -38,19 +38,19 @@ def hyperparam_sweep(
     agent_param_sweep_list = cartesian_product(agent_parameters_sweep)
     sweep_ids = list(range(len(agent_param_sweep_list))) if sweep_ids == 'all' else sweep_ids
 
-    for id in sweep_ids:
-        print(f'running id: {id}')
-        print(f'params: {agent_param_sweep_list[id]}')
+    for ids in sweep_ids:
+        print(f'running id: {ids}')
+        print(f'params: {agent_param_sweep_list[ids]}')
 
         train_engine = TrainingEngine(env_class=env_class,
                                       env_parameters=env_parameters,
                                       agent_class=agent_class,
-                                      agent_parameters=agent_param_sweep_list[id],
+                                      agent_parameters=agent_param_sweep_list[ids],
                                       metric_logger=metric_logger,
                                       discount_rate=discount_rate,
                                       num_runs=num_runs,
                                       num_iterations_per_run=num_iterations_per_run,
-                                      agent_param_id=id,
+                                      agent_param_id=ids,
                                       iteration_counter=iteration_counter,
                                       save_frequency=save_frequency,
                                       evaluation_num_episodes=evaluation_num_episodes,
